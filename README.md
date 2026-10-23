@@ -2,7 +2,7 @@
 
 **Universal / Modular Model Context Protocol (MCP) Hub** berbasis **Node.js & TypeScript** menggunakan SDK resmi `@modelcontextprotocol/sdk`.
 
-Dirancang khusus dengan **Stateless Streamable HTTP Transport** (`StreamableHTTPServerTransport`, **bukan** legacy SSE) dan sistem **Dynamic Plugin Tool Loader** sehingga Anda dapat menggabungkan berbagai API/tools (Serper Google Search, Maps, Internal API, Database, dll.) dalam satu container MCP yang ringan dan mudah diintegrasikan dengan **n8n MCP Client Node**.
+Dirancang khusus dengan **Stateless Streamable HTTP Transport** (`StreamableHTTPServerTransport`, **bukan** legacy SSE) dan sistem **Dynamic Plugin Tool Loader** sehingga Anda dapat menggabungkan berbagai API/tools (Serper Google Search, Server & Docker Monitoring, Maps, Internal API, Database, dll.) dalam satu container MCP yang ringan dan mudah diintegrasikan dengan **n8n MCP Client Node**.
 
 ---
 
@@ -14,10 +14,15 @@ Dirancang khusus dengan **Stateless Streamable HTTP Transport** (`StreamableHTTP
 2. **Arsitektur Plugin Modular (Auto-Discovery)**
    - Semua modul tool berada di dalam folder `src/tools/`.
    - Saat server dijalankan, `src/tools/index.ts` otomatis memindai dan memuat seluruh file di `src/tools/` tanpa perlu mengubah kode `src/server.ts`.
-3. **Modul Perdana: Serper API (`src/tools/serper.ts`)**
+3. **Modul Serper API (`src/tools/serper.ts`)**
    - `serper_google_search`: Pencarian web Google (`https://google.serper.dev/search`) lengkap dengan parameter `query`, `gl`, `hl`, `num`, `location`, `tbs`, `autocorrect`, `page`.
    - `serper_news_search`: Pencarian berita terbaru Google News (`https://google.serper.dev/news`) lengkap dengan parameter `query`, `gl`, `hl`, `num`, `location`, `tbs`, `autocorrect`, `page`.
-4. **Port Default Aman (`3301`)**
+4. **Modul Server Ubuntu & Docker Monitoring (`src/tools/monitoring.ts`)**
+   - `monitor_system_metrics`: Memantau metrik sistem host Ubuntu meliputi penggunaan CPU (%), *load average* (1m, 5m, 15m), penggunaan RAM & Swap (`free -m`), penggunaan Disk (`df -h`), serta *uptime*.
+   - `monitor_docker_containers`: Menampilkan daftar dan status container Docker (`docker ps` / `docker ps -a`) beserta filter nama container.
+   - `monitor_docker_stats`: Memantau *resource usage* container secara *real-time snapshot* (`docker stats --no-stream`) meliputi CPU %, Memory usage/limit, Network I/O, dan Block I/O.
+   - `monitor_docker_logs`: Mengambil log terbaru dari container tertentu (`docker logs --tail`) lengkap dengan dukungan opsi `--since` dan `timestamps`.
+5. **Port Default Aman (`3301`)**
    - Berjalan di port `3301` (dapat diubah melalui variabel environment `PORT`) agar tidak bentrok dengan layanan lain (seperti port `3000` atau `3300`).
 
 ---
@@ -31,10 +36,11 @@ uni-mcp/
 │   ├── types.ts           # Interface standar ToolDefinition & helper formatToolResult
 │   └── tools/
 │       ├── index.ts       # Dynamic Auto-Loader & Tool Registry
-│       └── serper.ts      # Plugin tool Google Search & News Search (Serper.dev)
+│       ├── serper.ts      # Plugin tool Google Search & News Search (Serper.dev)
+│       └── monitoring.ts  # Plugin tool Monitoring Server Ubuntu & Docker Container
 ├── .env.example           # Template konfigurasi environment
-├── Dockerfile             # Multi-stage Docker build (node:20-alpine)
-├── docker-compose.yml     # Konfigurasi container & network port 3301:3301
+├── Dockerfile             # Multi-stage Docker build (node:20-alpine + docker-cli + procps)
+├── docker-compose.yml     # Konfigurasi container, port 3301:3301 & mount docker.sock
 ├── package.json
 └── tsconfig.json
 ```
@@ -93,6 +99,10 @@ uni-mcp/
        "health": "/health"
      },
      "loadedTools": [
+       "monitor_system_metrics",
+       "monitor_docker_containers",
+       "monitor_docker_stats",
+       "monitor_docker_logs",
        "serper_google_search",
        "serper_news_search"
      ]

@@ -1,0 +1,31 @@
+services:
+  uni-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uni-mcp
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3301}:3301"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3301
+      - HOST=0.0.0.0
+      - SERPER_API_KEY=${SERPER_API_KEY}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - mcp-network
+      # Jika ingin satu network langsung dengan container n8n (akses via http://uni-mcp:3301/mcp),
+      # uncomment baris di bawah dan sesuaikan dengan nama network docker n8n Anda:
+      # - n8n_network
+
+networks:
+  mcp-network:
+    driver: bridge
+  # Uncomment blok di bawah jika ingin join ke network n8n yang sudah ada:
+  # n8n_network:
+  #   external: true
+  #   name: n8n_default

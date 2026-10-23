@@ -16,6 +16,8 @@ services:
       - SERPER_API_KEY=${SERPER_API_KEY}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/net:/host/proc/net:ro
+      - /sys/class/net:/host/sys/class/net:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

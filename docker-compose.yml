@@ -22,12 +22,12 @@ services:
       - mcp-network
       # Jika ingin satu network langsung dengan container n8n (akses via http://uni-mcp:3301/mcp),
       # uncomment baris di bawah dan sesuaikan dengan nama network docker n8n Anda:
-      # - n8n_network
+      - n8n-server_default
 
 networks:
   mcp-network:
     driver: bridge
   # Uncomment blok di bawah jika ingin join ke network n8n yang sudah ada:
-  # n8n_network:
-  #   external: true
-  #   name: n8n_default
+  n8n-server_default:
+     external: true
+     name: n8n-server_default

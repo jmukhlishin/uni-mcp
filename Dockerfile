@@ -15,6 +15,9 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
+# Install Docker CLI & procps (standard Linux 'free' & 'uptime' utilities) for host/Docker monitoring tools
+RUN apk add --no-cache docker-cli procps
+
 ENV NODE_ENV=production
 ENV PORT=3301
 ENV HOST=0.0.0.0

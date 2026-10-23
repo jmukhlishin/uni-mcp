@@ -1,0 +1,32 @@
+{
+  "name": "uni-mcp",
+  "version": "1.0.0",
+  "description": "Universal / Modular MCP Hub using Node.js, TypeScript, and Streamable HTTP Transport (@modelcontextprotocol/sdk)",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "uni-mcp": "dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

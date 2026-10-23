@@ -14,6 +14,8 @@ services:
       - PORT=3301
       - HOST=0.0.0.0
       - SERPER_API_KEY=${SERPER_API_KEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

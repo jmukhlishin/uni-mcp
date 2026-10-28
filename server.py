@@ -61,7 +61,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_Methods=["*"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -306,7 +306,7 @@ def screen_screenshot(req: ScreenshotRequest):
         "mime_type": mime_type,
         "saved_path": str(file_path),
         "size_bytes": len(buf.getvalue()),
-        "base64_image": b64_str,
+        "base64_image": None  # <--- Ganti jadi None atau string kosong ""
     }
 
 

@@ -15,8 +15,11 @@ Dirancang khusus dengan **Stateless Streamable HTTP Transport** (`StreamableHTTP
    - Semua modul tool berada di dalam folder `src/tools/`.
    - Saat server dijalankan, `src/tools/index.ts` otomatis memindai dan memuat seluruh file di `src/tools/` tanpa perlu mengubah kode `src/server.ts`.
 3. **Modul Obsidian Local REST API — Memory & Vault Integration (`src/tools/obsidian.ts`)**
-   - Menghubungkan AI Agent ke **Obsidian Local REST API** (default endpoint: `http://obsidian:27124`) untuk manajemen memori jangka panjang dan catatan (*notes*) di dalam *vault* Obsidian.
-   - Mendukung HTTP maupun HTTPS (*self-signed certificate* otomatis ditangani) dengan autentikasi `Bearer` token (`OBSIDIAN_API_KEY`).
+   - Menghubungkan AI Agent ke **Obsidian Local REST API** untuk manajemen memori jangka panjang dan catatan (*notes*) di dalam *vault* Obsidian.
+   - **Multi-Target Vault Support** — Mendukung dua target vault Obsidian secara bersamaan melalui parameter opsional `target`:
+     - **`lera`** (default): Menggunakan `OBSIDIAN_BASE_URL` + `OBSIDIAN_API_KEY`
+     - **`lena`**: Menggunakan `OBSIDIAN_LENA_BASE_URL` + `OBSIDIAN_LENA_API_KEY`
+   - Mendukung HTTP maupun HTTPS (*self-signed certificate* otomatis ditangani) dengan autentikasi `Bearer` token.
    - Menyediakan 5 tools utama: `obsidian_read_note`, `obsidian_append_note`, `obsidian_write_note`, `obsidian_search_notes`, dan `obsidian_list_files`.
 4. **Modul Computer Operation — Dual Target Windows PC (`src/tools/computer_operation.ts` + `server.py`)**
    - Mengontrol PC Windows secara *remote* dari `uni-mcp` melalui protokol HTTP ke worker `server.py` (FastAPI + PyAutoGUI + MSS) yang berjalan di port `8181`.
@@ -46,7 +49,7 @@ uni-mcp/
 │   ├── types.ts                   # Interface standar ToolDefinition & helper formatToolResult
 │   └── tools/
 │       ├── index.ts               # Dynamic Auto-Loader & Tool Registry
-│       ├── obsidian.ts            # Plugin tool Integrasi Memory/Vault via Obsidian Local REST API
+│       ├── obsidian.ts            # Plugin tool Integrasi Memory/Vault via Obsidian Local REST API (Multi-Target: lera & lena)
 │       ├── computer_operation.ts  # Plugin tool Remote Computer Operation (Dual Target: Office & Home)
 │       ├── serper.ts              # Plugin tool Google Search & News Search (Serper.dev)
 │       ├── monitoring.ts          # Plugin tool Monitoring Server Ubuntu & Docker Container
@@ -65,17 +68,47 @@ uni-mcp/
 
 Modul ini menghubungkan `uni-mcp` ke plugin **Obsidian Local REST API** untuk membaca, menulis, menambahkan (*append*), mencari, dan menjelajahi file catatan Markdown di dalam *vault* Obsidian sebagai *knowledge base* / *long-term memory* AI Agent.
 
+### Multi-Target Vault Support
+
+Modul Obsidian mendukung **dua target vault** secara bersamaan melalui parameter opsional `target` pada setiap tool:
+
+| Target | Deskripsi | Environment Variables | Default URL |
+| :--- | :--- | :--- | :--- |
+| `lera` (default) | Vault Obsidian utama (Lera) | `OBSIDIAN_BASE_URL` + `OBSIDIAN_API_KEY` | `http://obsidian:27124` |
+| `lena` | Vault Obsidian sekunder (Lena) | `OBSIDIAN_LENA_BASE_URL` + `OBSIDIAN_LENA_API_KEY` | `http://obsidian-lena:27124` |
+
+Setiap respons tool akan menyertakan field `target` yang menunjukkan vault mana yang diakses, memudahkan *traceability* saat AI Agent bekerja dengan kedua vault secara bergantian.
+
 ### Daftar Tool `obsidian`
 
 | Nama Tool | Deskripsi & Fungsi | Parameter Utama |
 | :--- | :--- | :--- |
-| `obsidian_read_note` | Membaca isi catatan Markdown (serta metadata *frontmatter*/tag opsional) dari *vault* Obsidian. | `path` (wajib, contoh: `"Memory/profile.md"`), `include_metadata` (opsional, boolean, default `false`) |
-| `obsidian_append_note` | Menambahkan (*append*) konten Markdown ke bagian akhir catatan yang sudah ada (atau membuat file baru jika belum ada). | `path` (wajib, contoh: `"Daily/2026-11-06.md"`), `content` (wajib, teks Markdown) |
-| `obsidian_write_note` | Membuat catatan baru atau menimpa (*overwrite*) seluruh isi catatan di *vault* Obsidian. | `path` (wajib, contoh: `"Projects/roadmap.md"`), `content` (wajib, teks Markdown) |
-| `obsidian_search_notes` | Mencari teks di seluruh catatan dalam *vault* Obsidian (`/search/simple/`) beserta cuplikan konteks dan skor relevansi. | `query` (wajib, kata kunci pencarian), `context_length` (opsional, default `100`) |
-| `obsidian_list_files` | Menampilkan daftar file dan subfolder di dalam direktori tertentu (atau *root* *vault* jika dikosongkan). | `folder_path` (opsional, contoh: `"Memory"`, default `""` untuk *root* *vault*) |
+| `obsidian_read_note` | Membaca isi catatan Markdown (serta metadata *frontmatter*/tag opsional) dari *vault* Obsidian. | `path` (wajib), `include_metadata` (opsional, boolean, default `false`), `target` (opsional, `'lera'` \| `'lena'`, default `'lera'`) |
+| `obsidian_append_note` | Menambahkan (*append*) konten Markdown ke bagian akhir catatan yang sudah ada (atau membuat file baru jika belum ada). | `path` (wajib), `content` (wajib, teks Markdown), `target` (opsional, default `'lera'`) |
+| `obsidian_write_note` | Membuat catatan baru atau menimpa (*overwrite*) seluruh isi catatan di *vault* Obsidian. | `path` (wajib), `content` (wajib, teks Markdown), `target` (opsional, default `'lera'`) |
+| `obsidian_search_notes` | Mencari teks di seluruh catatan dalam *vault* Obsidian (`/search/simple/`) beserta cuplikan konteks dan skor relevansi. | `query` (wajib), `context_length` (opsional, default `100`), `target` (opsional, default `'lera'`) |
+| `obsidian_list_files` | Menampilkan daftar file dan subfolder di dalam direktori tertentu (atau *root* *vault* jika dikosongkan). | `folder_path` (opsional, default `""`), `target` (opsional, default `'lera'`) |
 
 > **Catatan:** Jika parameter `path` pada `obsidian_read_note`, `obsidian_append_note`, atau `obsidian_write_note` diberikan tanpa ekstensi file (misalnya `"Memory/catatan"`), ekstensi `.md` akan ditambahkan secara otomatis menjadi `"Memory/catatan.md"`.
+
+### Contoh Penggunaan Multi-Target
+
+```json
+// Membaca catatan dari vault Lera (default)
+{ "name": "obsidian_read_note", "arguments": { "path": "Memory/profile.md" } }
+
+// Membaca catatan dari vault Lena
+{ "name": "obsidian_read_note", "arguments": { "path": "Memory/profile.md", "target": "lena" } }
+
+// Menulis catatan ke vault Lena
+{ "name": "obsidian_write_note", "arguments": { "path": "Daily/2026-11-07.md", "content": "# Hari ini...", "target": "lena" } }
+
+// Mencari di vault Lera
+{ "name": "obsidian_search_notes", "arguments": { "query": "project roadmap" } }
+
+// Mencari di vault Lena
+{ "name": "obsidian_search_notes", "arguments": { "query": "project roadmap", "target": "lena" } }
+```
 
 ### Cara Konfigurasi Modul Obsidian
 
@@ -84,22 +117,28 @@ Modul ini menghubungkan `uni-mcp` ke plugin **Obsidian Local REST API** untuk me
    - Buka **Settings → Community Plugins**, cari dan instal **Local REST API**, lalu aktifkan (*Enable*).
    - Salin **API Key** yang tertera pada pengaturan plugin **Local REST API**.
    - Pastikan port REST API aktif (default: `27124` atau HTTP port sesuai konfigurasi Anda) dan dapat diakses dari jaringan container `uni-mcp`.
+   - **Untuk target Lena:** Lakukan hal yang sama pada instance Obsidian kedua (vault Lena), pastikan berjalan di port/network yang berbeda dari vault Lera.
 
 2. **Tambahkan Environment Variable di `.env`:**
-   Atur variabel `OBSIDIAN_BASE_URL` dan `OBSIDIAN_API_KEY` pada file `.env` di repository `uni-mcp`:
+   Atur variabel untuk kedua target pada file `.env` di repository `uni-mcp`:
 
    ```env
-   # Obsidian Local REST API Configuration
-   # Default URL jika tidak diisi: http://obsidian:27124
+   # Obsidian Local REST API — Target 'lera' (default)
    OBSIDIAN_BASE_URL=http://obsidian:27124
-   OBSIDIAN_API_KEY=your_obsidian_local_rest_api_key_here
+   OBSIDIAN_API_KEY=your_obsidian_lera_api_key_here
+
+   # Obsidian Local REST API — Target 'lena' (secondary vault)
+   OBSIDIAN_LENA_BASE_URL=http://obsidian-lena:27124
+   OBSIDIAN_LENA_API_KEY=your_obsidian_lena_api_key_here
    ```
 
-   - **`OBSIDIAN_BASE_URL`**: URL endpoint Obsidian Local REST API. Secara default bernilai `http://obsidian:27124` (sangat ideal jika container Obsidian berada dalam satu Docker network bernama `obsidian`). Anda juga dapat mengarahkannya ke IP host/LAN atau HTTPS (contoh: `https://192.168.0.10:27124` — sertifikat *self-signed* akan ditangani secara otomatis).
-   - **`OBSIDIAN_API_KEY`**: Token Bearer API Key dari plugin Obsidian Local REST API (wajib diisi).
+   - **`OBSIDIAN_BASE_URL`**: URL endpoint Obsidian vault Lera. Default: `http://obsidian:27124`.
+   - **`OBSIDIAN_API_KEY`**: Token Bearer API Key dari plugin Obsidian vault Lera (wajib jika menggunakan target `lera`).
+   - **`OBSIDIAN_LENA_BASE_URL`**: URL endpoint Obsidian vault Lena. Default: `http://obsidian-lena:27124`.
+   - **`OBSIDIAN_LENA_API_KEY`**: Token Bearer API Key dari plugin Obsidian vault Lena (wajib jika menggunakan target `lena`).
 
 3. **Pastikan Environment Variable Diteruskan ke Container Docker (Jika Menggunakan Docker Compose):**
-   Karena `docker-compose.yml` sudah memuat `env_file: - .env`, variabel `OBSIDIAN_BASE_URL` dan `OBSIDIAN_API_KEY` di dalam file `.env` akan otomatis terbaca di dalam container `uni-mcp` setelah container dijalankan ulang (`docker compose up -d --build`).
+   Karena `docker-compose.yml` sudah memuat `env_file: - .env`, variabel di atas akan otomatis terbaca di dalam container `uni-mcp` setelah container dijalankan ulang (`docker compose up -d --build`).
 
 ---
 
@@ -232,8 +271,15 @@ curl http://100.107.229.43:8181/status
    PORT=3301
    HOST=0.0.0.0
    SERPER_API_KEY=your_serper_api_key_here
+
+   # Obsidian — Target 'lera' (default)
    OBSIDIAN_BASE_URL=http://obsidian:27124
-   OBSIDIAN_API_KEY=your_obsidian_local_rest_api_key_here
+   OBSIDIAN_API_KEY=your_obsidian_lera_api_key_here
+
+   # Obsidian — Target 'lena' (secondary vault)
+   OBSIDIAN_LENA_BASE_URL=http://obsidian-lena:27124
+   OBSIDIAN_LENA_API_KEY=your_obsidian_lena_api_key_here
+
    COMPUTER_OFFICE_URL=http://192.168.0.91:8181
    COMPUTER_HOME_URL=http://100.107.229.43:8181
    COMPUTER_DEFAULT_TARGET=office
